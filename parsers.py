@@ -11,7 +11,7 @@ class CdpParser:
         self.others = []
 
         def phone_parse(neighbor):
-            if neighbor['platform'] == 'IP Phone' or neighbor['capability'].__contains__('Phone'):
+            if neighbor['platform'].__contains__('IP Phone') or neighbor['capabilities'].__contains__('Phone'):
                 hostname = neighbor['destination_host']
                 mgmt_ip = neighbor['management_ip']
                 l_intf = neighbor['local_port']
@@ -43,7 +43,7 @@ class CdpParser:
                 self.phones.append(phone)
 
         def switch_parse(neighbor):
-            if neighbor['capability'].__contains__('Switch'):
+            if neighbor['capabilities'].__contains__('Switch'):
                 software_version = neighbor['software_version']
                 platform = neighbor['platform']
                 for software in neighbor['software_version'].split(','):
@@ -68,8 +68,9 @@ class CdpParser:
                 self.switches.append(switch)
 
         def router_parse(neighbor):
-            if neighbor['capability'].__contains__('Router') and \
-                    neighbor['capability'].__contains__('Source-Route-Bridge'):
+            capabilities = neighbor['capabilities']
+            if capabilities.__contains__('Router') and \
+                    capabilities.__contains__('Source-Route-Bridge'):
                 software_version = neighbor['software_version']
                 platform = neighbor['platform']
                 for software in neighbor['software_version'].split(','):
@@ -119,11 +120,12 @@ class CdpParser:
                 self.waps.append(ap)
 
         def other_parse(neighbor):
-            if not neighbor['capability'].__contains__('Router') and \
-                    not neighbor['capability'].__contains__('Source-Route-Bridge') and \
-                    not neighbor['capability'].__contains__('Trans-Bridge') and \
-                    not neighbor['capability'].__contains__('Switch') and \
-                    not neighbor['capability'].__contains__('Phone'):
+            capabilities = neighbor['capabilities']
+            if not capabilities.__contains__('Router') and \
+                    not capabilities.__contains__('Source-Route-Bridge') and \
+                    not capabilities.__contains__('Trans-Bridge') and \
+                    not capabilities.__contains__('Switch') and \
+                    not capabilities.__contains__('Phone'):
                 other = {
                     'hostname': neighbor['neighbor'],
                     'mgmt_ip': neighbor['management_ip'],
