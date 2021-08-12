@@ -1,5 +1,5 @@
 import PySimpleGUI as Sg
-from net_async.validators import MgmtIPAddresses
+from net_async import MgmtIPAddresses
 
 f = {
     'font': 'Helvetica',
@@ -11,7 +11,7 @@ f = {
 s_font = f'{f["font"]} {f["size"]["small"]}'
 m_font = f'{f["font"]} {f["size"]["medium"]}'
 l_font = f'{f["font"]} {f["size"]["large"]}'
-window_title = 'net_async'
+window_title = 'NetInventory'
 
 
 def gui_print(string, font=m_font):
@@ -92,12 +92,12 @@ class ManagementFileBrowseWindow:
             if event == 'Check File' or event == 'Retry':
                 try:
                     Sg.user_settings_set_entry('-filename-', values['file'])
-                    mgmt_file = MgmtIPAddresses(values['file'])
-                    if mgmt_file.valid:
-                        self.mgmt_ips = mgmt_file.mgmt_ips
+                    file = MgmtIPAddresses(values['file'])
+                    if file.valid:
+                        self.mgmt_ips = file.mgmt_ips
                         break
                     else:
-                        current_window = w_invalid_file_entry(current_window, mgmt_file)
+                        current_window = w_invalid_file_entry(current_window, file)
                 except FileNotFoundError:
                     current_window = w_file_not_found(current_window)
             if event == 'Main Page':

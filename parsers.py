@@ -3,7 +3,7 @@ import re
 
 
 class CdpParser:
-    def __init__(self, cdp_neighbors, switchports, session):
+    def __init__(self, cdp_neighbors, cdp_detail, switchports, session):
         self.phones = []
         self.switches = []
         self.waps = []
@@ -74,10 +74,12 @@ class CdpParser:
         for n in cdp_neighbors:
             phone_parse(n)
             switch_parse(n)
-            wap_parse(n)
+
+        for n_d in cdp_detail:
+            wap_parse(n_d)
 
 
-def phone_file_parse(file):
+def cucm_export_parse(file):
     phones = {}
     while True:
         try:
