@@ -1,0 +1,2 @@
+class NoPhoneReportFound(Exception):
+    pass
