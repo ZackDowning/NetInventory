@@ -1,0 +1,8 @@
+gui.py
+/templates/*
+/templates
+/build
+/build/*
+/dist
+/dist/*
+*.spec
