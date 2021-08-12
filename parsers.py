@@ -12,8 +12,7 @@ class CdpParser:
 
         def phone_parse(neighbor):
             if neighbor['platform'].__contains__('IP Phone') or neighbor['capabilities'].__contains__('Phone'):
-                hostname = neighbor['destination_host']
-                mgmt_ip = neighbor['management_ip']
+                hostname = neighbor['destination_host'].split('.')[0]
                 l_intf = neighbor['local_port']
                 intf = re.findall(r'.{2}', l_intf)[0] + re.findall(r'\d.+', l_intf)[0]
                 macreg = re.findall(r'.{4}', hostname.replace('SEP', ''))
@@ -27,14 +26,14 @@ class CdpParser:
                         for mac_addr in session.send_command(sh_mac_intf):
                             if mac_addr['vlan'] == switchport['voice_vlan']:
                                 voice_vlan = mac_addr['vlan']
-                if platform.__contains__('cisco '):
+                if platform.__contains__('Cisco IP Phone'):
                     platform = neighbor['platform'].replace('Cisco IP Phone ', '')
                 else:
                     platform = neighbor['platform']
                 phone = {
                     'hostname': hostname,
                     'local_intf': l_intf,
-                    'mgmt_ip': mgmt_ip,
+                    'mgmt_ip': neighbor['management_ip'],
                     'mac_addr': mac_address,
                     'voice_vlan': voice_vlan,
                     'software_version': software_version,
@@ -48,17 +47,19 @@ class CdpParser:
                 platform = neighbor['platform']
                 for software in neighbor['software_version'].split(','):
                     if software.__contains__('Version'):
-                        software_version = software.split('Version')[1]
+                        software_version = software.split('Version')[1].split('REL')[0]
                         if software_version.__contains__(':'):
                             software_version = software_version.replace(': ', '')
                         else:
                             software_version = software_version.replace(' ', '')
                 if platform.__contains__('cisco '):
                     platform = neighbor['platform'].replace('cisco ', '')
+                elif platform.__contains__('Cisco '):
+                    platform = neighbor['platform'].replace('Cisco ', '')
                 else:
                     platform = neighbor['platform']
                 switch = {
-                    'hostname': neighbor['destination_host'],
+                    'hostname': neighbor['destination_host'].split('.')[0],
                     'mgmt_ip': neighbor['management_ip'],
                     'local_intf': neighbor['local_port'],
                     'remote_intf': neighbor['remote_port'],
@@ -82,10 +83,12 @@ class CdpParser:
                             software_version = software_version.replace(' ', '')
                 if platform.__contains__('cisco '):
                     platform = neighbor['platform'].replace('cisco ', '')
+                elif platform.__contains__('Cisco '):
+                    platform = neighbor['platform'].replace('Cisco ', '')
                 else:
                     platform = neighbor['platform']
                 router = {
-                    'hostname': neighbor['destination_host'],
+                    'hostname': neighbor['destination_host'].split('.')[0],
                     'mgmt_ip': neighbor['management_ip'],
                     'local_intf': neighbor['local_port'],
                     'remote_intf': neighbor['remote_port'],
@@ -107,10 +110,12 @@ class CdpParser:
                             software_version = software_version.replace(' ', '')
                 if platform.__contains__('cisco '):
                     platform = neighbor['platform'].replace('cisco ', '')
+                elif platform.__contains__('Cisco '):
+                    platform = neighbor['platform'].replace('Cisco ', '')
                 else:
                     platform = neighbor['platform']
                 ap = {
-                    'hostname': neighbor['destination_host'],
+                    'hostname': neighbor['destination_host'].split('.')[0],
                     'mgmt_ip': neighbor['management_ip'],
                     'model': platform,
                     'r_intf': neighbor['remote_port'],
@@ -127,7 +132,7 @@ class CdpParser:
                     not capabilities.__contains__('Switch') and \
                     not capabilities.__contains__('Phone'):
                 other = {
-                    'hostname': neighbor['destination_host'],
+                    'hostname': neighbor['destination_host'].split('.')[0],
                     'mgmt_ip': neighbor['management_ip'],
                     'local_intf': neighbor['local_port'],
                     'remote_intf': neighbor['remote_port'],
