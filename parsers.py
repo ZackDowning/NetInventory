@@ -85,7 +85,7 @@ class CdpParser:
                 else:
                     platform = neighbor['platform']
                 router = {
-                    'hostname': neighbor['neighbor'],
+                    'hostname': neighbor['destination_host'],
                     'mgmt_ip': neighbor['management_ip'],
                     'local_intf': neighbor['local_port'],
                     'remote_intf': neighbor['remote_port'],
@@ -127,7 +127,7 @@ class CdpParser:
                     not capabilities.__contains__('Switch') and \
                     not capabilities.__contains__('Phone'):
                 other = {
-                    'hostname': neighbor['neighbor'],
+                    'hostname': neighbor['destination_host'],
                     'mgmt_ip': neighbor['management_ip'],
                     'local_intf': neighbor['local_port'],
                     'remote_intf': neighbor['remote_port'],
