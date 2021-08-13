@@ -1,4 +1,5 @@
 from exceptions import NoPhoneReportFound
+from net_async import multithread
 import re
 
 
@@ -26,6 +27,8 @@ class CdpParser:
                         for mac_addr in session.send_command(sh_mac_intf):
                             if mac_addr['vlan'] == switchport['voice_vlan']:
                                 voice_vlan = mac_addr['vlan']
+                                break
+                        break
                 if platform.__contains__('Cisco IP Phone'):
                     platform = neighbor['platform'].replace('Cisco IP Phone ', '')
                 else:
@@ -52,6 +55,7 @@ class CdpParser:
                             software_version = software_version.replace(': ', '')
                         else:
                             software_version = software_version.replace(' ', '')
+                        break
                 if platform.__contains__('cisco '):
                     platform = neighbor['platform'].replace('cisco ', '')
                 elif platform.__contains__('Cisco '):
@@ -81,6 +85,7 @@ class CdpParser:
                             software_version = software_version.replace(': ', '')
                         else:
                             software_version = software_version.replace(' ', '')
+                        break
                 if platform.__contains__('cisco '):
                     platform = neighbor['platform'].replace('cisco ', '')
                 elif platform.__contains__('Cisco '):
@@ -108,6 +113,7 @@ class CdpParser:
                             software_version = software_version.replace(': ', '')
                         else:
                             software_version = software_version.replace(' ', '')
+                        break
                 if platform.__contains__('cisco '):
                     platform = neighbor['platform'].replace('cisco ', '')
                 elif platform.__contains__('Cisco '):
@@ -141,12 +147,14 @@ class CdpParser:
                 }
                 self.others.append(other)
 
-        for n in cdp_neighbors:
+        def parse(n):
             phone_parse(n)
             switch_parse(n)
             wap_parse(n)
             router_parse(n)
             other_parse(n)
+
+        multithread(parse, cdp_neighbors)
 
 
 def cucm_export_parse(file):
