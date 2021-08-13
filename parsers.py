@@ -4,7 +4,7 @@ import re
 
 
 class CdpParser:
-    def __init__(self, cdp_neighbors, switchports, session):
+    def __init__(self, cdp_neighbors, switchports, mac_addrs):
         nxos = False
         try:
             _ = cdp_neighbors[0]['destination_host']
@@ -13,8 +13,8 @@ class CdpParser:
             mgmt_ip_s = 'management_ip'
         except KeyError:
             nxos = True
-            hostname_s = 'destination_host'
-            version_s = 'software_version'
+            hostname_s = 'dest_host'
+            version_s = 'version'
             mgmt_ip_s = 'mgmt_ip'
         self.phones = []
         self.switches = []
@@ -40,8 +40,7 @@ class CdpParser:
             platform = neighbor['platform']
             for switchport in switchports:
                 if switchport['interface'] == intf:
-                    sh_mac_intf = f'show mac address-table interface {intf}'
-                    for mac_addr in session.send_command(sh_mac_intf):
+                    for mac_addr in mac_addrs:
                         if mac_addr['vlan'] == switchport['voice_vlan']:
                             voice_vlan = mac_addr['vlan']
                             break
@@ -175,13 +174,48 @@ class CdpParser:
                     hostname = sysname
                 if mgmt_ip == '':
                     mgmt_ip = neighbor['interface_ip']
+            software_version = neighbor[version_s]
+            if software_version.__contains__(','):
+                for software in software_version.split(','):
+                    if software.__contains__('Version'):
+                        software_version = software.split('Version')[1].split('REL')[0]
+                        if software_version.__contains__(':'):
+                            software_version = software_version.replace(': ', '')
+                        else:
+                            software_version = software_version.replace(' ', '')
+                        break
+            elif software_version.__contains__('Version'):
+                found_1 = False
+                for x in software_version.split(' '):
+                    if x.__contains__('Version'):
+                        found_1 = True
+                        continue
+                    if found_1:
+                        software_version = x
+                        break
+            elif software_version.__contains__('version'):
+                found_1 = False
+                for x in software_version.split(' '):
+                    if x.__contains__('version'):
+                        found_1 = True
+                        continue
+                    if found_1:
+                        software_version = x
+                        break
+            platform = neighbor['platform']
+            if platform.__contains__('cisco '):
+                platform = neighbor['platform'].replace('cisco ', '')
+            elif platform.__contains__('Cisco '):
+                platform = neighbor['platform'].replace('Cisco ', '')
+            else:
+                platform = neighbor['platform']
             other = {
                 'hostname': hostname,
                 'mgmt_ip': mgmt_ip,
                 'local_intf': neighbor['local_port'],
                 'remote_intf': neighbor['remote_port'],
-                'software_version': neighbor[version_s],
-                'model': neighbor['platform']
+                'software_version': software_version,
+                'model': platform
             }
             self.others.append(other)
 
