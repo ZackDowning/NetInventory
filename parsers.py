@@ -63,6 +63,8 @@ class CdpParser:
         def switch_parse(neighbor):
             mgmt_ip = neighbor[mgmt_ip_s]
             hostname = neighbor[hostname_s].split('.')[0]
+            if hostname.__contains__('('):
+                hostname = hostname.split('(')[0]
             if nxos:
                 sysname = neighbor['sysname']
                 if sysname != '':
