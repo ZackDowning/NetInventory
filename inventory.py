@@ -1,4 +1,4 @@
-from parsers import CdpParser, cucm_export_parse
+from parsers import CdpParser
 from net_async import AsyncSessions, BugCheck
 import time
 
@@ -13,8 +13,7 @@ def discovery(session):
                 'phones': cdp_parser.phones,
                 'routers_switches': cdp_parser.routers_switches,
                 'others': cdp_parser.others
-            }
-    """
+            }"""
     cdp_neighbors = session.send_command('show cdp neighbor detail')
     switchports = session.send_command('show interface switchport')
     mac_addrs = session.send_command('show mac address-table')
@@ -34,8 +33,7 @@ class RtSwSeperator:
 
         Attributes:
             'new' = [] Discovered CDP neighbors\n
-            'connection_parsed' = [] Scanned devices via connection
-    """
+            'connection_parsed' = [] Scanned devices via connection"""
     def __init__(self, sessions_output, known_hostnames):
         inv = sessions_output
         self.new = []
