@@ -50,7 +50,7 @@ class Compile:
                     else:
                         for new_device in self.new_devices:
                             if new_device['hostname'] == hostname:
-                                new_device['links'].append(neighbor)
+                                new_device['neighbors'].append(neighbor)
                                 break
 
         for output in inv:
@@ -79,9 +79,13 @@ class FullInventory:
             start_discovery_time = time.perf_counter()
             if verbose:
                 if init:
-                    print(f'Starting Initial Discovery on {len(mgmt_ips)} Devices...')
+                    print(f'=========================================================================\n'
+                          f'Starting Initial Discovery on {len(mgmt_ips)} Devices...\n'
+                          f'=========================================================================\n')
                 else:
-                    print(f'Starting Discovery Pass #{discovery_count} on {len(mgmt_ips)} Devices...')
+                    print(f'-------------------------------------------------------------------------\n'
+                          f'Starting Discovery Pass #{discovery_count} on {len(mgmt_ips)} Devices...\n'
+                          f'-------------------------------------------------------------------------')
             while True:
                 sessions = AsyncSessions(username, password, mgmt_ips, discovery, enable_pw, True)
                 bug_check = BugCheck(sessions.successful_devices, sessions.failed_devices, mgmt_ips)
@@ -130,13 +134,19 @@ class FullInventory:
                 discovery_elapsed_time = int(round((finish_discovery_time - start_discovery_time) / 60, 0))
                 if init:
                     if recursive:
-                        print(f'Finished Initial Discovery in {discovery_elapsed_time} Minutes')
+                        print(f'-------------------------------------------------------------------------\n'
+                              f'Finished Initial Discovery in {discovery_elapsed_time} Minutes\n'
+                              f'-------------------------------------------------------------------------')
                 else:
-                    print(f'Finished Discovery Pass #{discovery_count} in {discovery_elapsed_time} Minutes')
+                    print(f'-------------------------------------------------------------------------\n'
+                          f'Finished Discovery Pass #{discovery_count} in {discovery_elapsed_time} Minutes\n'
+                          f'-------------------------------------------------------------------------')
             if len(new_devices) != 0:
                 for new_router_switch in new_devices:
                     known_hostnames.append(new_router_switch['hostname'])
-                    new_mgmt_ips.append(new_router_switch['ip_address'])
+                    ip_address = new_router_switch['ip_address']
+                    if ip_address != '':
+                        new_mgmt_ips.append(ip_address)
                     new_routers_switches.append(new_router_switch)
                 mgmt_ips = new_mgmt_ips
                 discovery_count += 1
@@ -153,4 +163,6 @@ class FullInventory:
         finish_full_discovery_time = time.perf_counter()
         full_discovery_elapsed_time = int(round((finish_full_discovery_time - start_full_discovery_time) / 60, 0))
         if verbose:
-            print(f'Finished Full Discovery in {full_discovery_elapsed_time} minutes')
+            print(f'\n=========================================================================\n'
+                  f'Finished Full Discovery in {full_discovery_elapsed_time} Minutes\n'
+                  f'=========================================================================')
