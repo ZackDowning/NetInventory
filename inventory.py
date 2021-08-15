@@ -36,7 +36,7 @@ class Compile:
                         all(not hostname.__contains__(known_hostname) for known_hostname in known_hostnames):
                     new_router = {
                         'hostname': hostname,
-                        'ip_address': rw_sw['mgmt_ip'],
+                        'ip_address': rw_sw['ip_address'],
                         'software_version': rw_sw['software_version'],
                         'model': rw_sw['model'],
                         'neighbors': [

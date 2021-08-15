@@ -93,12 +93,6 @@ class CdpParser:
             switch = {
                 'hostname': hostname,
                 'ip_address': mgmt_ip,
-                'neighbor': {
-                    'hostname': session.hostname,
-                    'ip_address': session.ip_address,
-                    'remote_intf': neighbor['local_port'],
-                    'local_intf': neighbor['remote_port']
-                },
                 'software_version': software_version,
                 'model': platform
             }
