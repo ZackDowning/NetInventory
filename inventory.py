@@ -1,5 +1,5 @@
 from parsers import CdpParser
-from net_async import AsyncSessions, BugCheck
+from net_async import AsyncSessions, BugCheck, InputError
 import time
 
 
@@ -31,9 +31,9 @@ class RtSwSeperator:
     Provided 'ASyncSessions().output' dict and 'known_hostnames' list, seperates connection \n
     scanned devices and CDP neighbor devices checking if device has already been discovered.
 
-        Attributes:
-            'new' = [] Discovered CDP neighbors\n
-            'connection_parsed' = [] Scanned devices via connection"""
+    :param sessions_output: - test
+    :param known_hostnames: - test
+    """
     def __init__(self, sessions_output, known_hostnames):
         inv = sessions_output
         self.new = []
@@ -172,8 +172,15 @@ class InventoryDiscovery:
         """Bool of initial discovery pass"""
 
         # Changes logical variable name from initial name to match variable name for recursive discovery pass loop
-        mgmt_ips = initial_mgmt_ips
-        """Device management IP addresses to run AsyncSessions on"""
+        # Also validates input
+        try:
+            if len(initial_mgmt_ips) == 0:
+                raise InputError('No Management IP Addresses found')
+            else:
+                mgmt_ips = initial_mgmt_ips
+                """Device management IP addresses to run AsyncSessions on"""
+        except TypeError:
+            raise InputError('No Management IP Addresses found')
 
         discovery_count = 1
         """Discovery pass counter"""
