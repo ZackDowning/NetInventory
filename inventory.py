@@ -94,13 +94,13 @@ class Compile:
 
 
 class FullInventory:
-    def __init__(self, username, password, initial_mgmt_ips, verbose=False):
+    def __init__(self, username, password, initial_mgmt_ips, enable_pw='', verbose=False, recursive=True):
         self.routers_switches = []
         self.waps = []
         self.phones = []
         self.others = []
         self.failed_devices = []
-        self.new_routers_switches = []
+        new_routers_switches = []
         known_hostnames = []
         init = True
         mgmt_ips = initial_mgmt_ips
@@ -111,11 +111,11 @@ class FullInventory:
             start_discovery_time = time.perf_counter()
             if verbose:
                 if init:
-                    print(f'Starting Initial Discovery on {len(mgmt_ips)} devices...')
+                    print(f'Starting Initial Discovery on {len(mgmt_ips)} Devices...')
                 else:
-                    print(f'Starting Discovery Pass #{discovery_count} on {len(mgmt_ips)}')
+                    print(f'Starting Discovery Pass #{discovery_count} on {len(mgmt_ips)} Devices...')
             while True:
-                sessions = AsyncSessions(username, password, mgmt_ips, discovery, verbose)
+                sessions = AsyncSessions(username, password, mgmt_ips, discovery, enable_pw, True)
                 bug_check = BugCheck(sessions.successful_devices, sessions.failed_devices, mgmt_ips)
                 if not bug_check.bug:
                     break
@@ -134,6 +134,7 @@ class FullInventory:
 
             sessions_outputs = sessions.outputs
             for output in sessions_outputs:
+                output = output['output']
                 for wap in output['waps']:
                     self.waps.append(wap)
                 for phone in output['phones']:
@@ -148,26 +149,39 @@ class FullInventory:
                     router_switch['discovery_status'] = 'existing'
                 else:
                     router_switch['discovery_status'] = 'new'
+                router_switch['connection_attempt'] = 'Success'
                 known_hostnames.append(router_switch['hostname'])
                 self.routers_switches.append(router_switch)
+                for new_router_switch in new_routers_switches:
+                    if router_switch['ip_address'] == new_router_switch['ip_address']:
+                        new_routers_switches.remove(new_router_switch)
+                        break
             new_devices = compiled.new_devices
+            finish_discovery_time = time.perf_counter()
+            if verbose:
+                discovery_elapsed_time = int(round((finish_discovery_time - start_discovery_time) / 60, 0))
+                if init:
+                    if recursive:
+                        print(f'Finished Initial Discovery in {discovery_elapsed_time} Minutes')
+                else:
+                    print(f'Finished Discovery Pass #{discovery_count} in {discovery_elapsed_time} Minutes')
             if len(new_devices) != 0:
                 for new_router_switch in new_devices:
                     known_hostnames.append(new_router_switch['hostname'])
                     new_mgmt_ips.append(new_router_switch['ip_address'])
-                    self.new_routers_switches.append(new_router_switch)
+                    new_routers_switches.append(new_router_switch)
                 mgmt_ips = new_mgmt_ips
                 discovery_count += 1
-                finish_discovery_time = time.perf_counter()
-                if verbose:
-                    discovery_elapsed_time = int(round((finish_discovery_time - start_discovery_time) / 60, 0))
-                    if init:
-                        print(f'Finished Initial Discovery in {discovery_elapsed_time} minutes')
-                    else:
-                        print(f'Finished Discovery Pass #{discovery_count} in {discovery_elapsed_time} minutes')
                 init = False
+                if not recursive:
+                    break
             else:
                 break
+
+        for new_router_switch in new_routers_switches:
+            new_router_switch['discovery_status'] = 'new'
+            new_router_switch['connection_attempt'] = 'Failed'
+            self.routers_switches.append(new_router_switch)
         finish_full_discovery_time = time.perf_counter()
         full_discovery_elapsed_time = int(round((finish_full_discovery_time - start_full_discovery_time) / 60, 0))
         if verbose:
