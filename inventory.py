@@ -8,12 +8,11 @@ def discovery(session):
     cdp_neighbors = session.send_command('show cdp neighbor detail')
     switchports = session.send_command('show interface switchport')
     mac_addrs = session.send_command('show mac address-table')
-    cdp_parser = CdpParser(cdp_neighbors, switchports, mac_addrs)
+    cdp_parser = CdpParser(cdp_neighbors, switchports, mac_addrs, session)
     return {
         'waps': cdp_parser.waps,
         'phones': cdp_parser.phones,
-        'switches': cdp_parser.switches,
-        'routers': cdp_parser.routers,
+        'routers_switches': cdp_parser.routers_switches,
         'others': cdp_parser.others
     }
 
@@ -24,73 +23,42 @@ class Compile:
         self.new_devices = []
         self.routers_switches = []
 
-        def sw_check(device, device_hostname):
-            switches = device['output']['switches']
-            for switch in switches:
-                sw_hostname = switch['hostname']
-                sw_link = {
-                    'device': device_hostname,
-                    'remote_intf': switch['local_intf'],
-                    'local_intf': switch['remote_intf']
+        def check(routers_switches_raw, neighbor_device):
+            for rw_sw in routers_switches_raw:
+                hostname = rw_sw['hostname']
+                neighbor = {
+                    'hostname': neighbor_device['hostname'],
+                    'ip_address': neighbor_device['ip_address'],
+                    'remote_intf': rw_sw['local_intf'],
+                    'local_intf': rw_sw['remote_intf']
                 }
-                if all(not sw_hostname.__contains__(device['device']['hostname']) for device in inv) and \
-                        all(not sw_hostname.__contains__(hostname) for hostname in known_hostnames):
-                    new_switch = {
-                        'hostname': sw_hostname,
-                        'ip_address': switch['mgmt_ip'],
-                        'software_version': switch['software_version'],
-                        'model': switch['model'],
-                        'links': [
-                            sw_link
-                        ]
-                    }
-                    if len(self.new_devices) == 0:
-                        self.new_devices.append(new_switch)
-                    elif all(sw_hostname != n_device['hostname'] for n_device in self.new_devices):
-                        self.new_devices.append(new_switch)
-                    else:
-                        for new_device in self.new_devices:
-                            if new_device['hostname'] == sw_hostname:
-                                new_device['links'].append(sw_link)
-                                break
-
-        def r_check(device, device_hostname):
-            routers = device['output']['routers']
-            for router in routers:
-                r_hostname = router['hostname']
-                r_link = {
-                    'device': device_hostname,
-                    'remote_intf': router['local_intf'],
-                    'local_intf': router['remote_intf']
-                }
-                if all(not r_hostname.__contains__(device['device']['hostname']) for device in inv) and \
-                        all(not r_hostname.__contains__(hostname) for hostname in known_hostnames):
+                if all(not hostname.__contains__(device['device']['hostname']) for device in inv) and \
+                        all(not hostname.__contains__(known_hostname) for known_hostname in known_hostnames):
                     new_router = {
-                        'hostname': r_hostname,
-                        'ip_address': router['mgmt_ip'],
-                        'software_version': router['software_version'],
-                        'model': router['model'],
-                        'links': [
-                            r_link
+                        'hostname': hostname,
+                        'ip_address': rw_sw['mgmt_ip'],
+                        'software_version': rw_sw['software_version'],
+                        'model': rw_sw['model'],
+                        'neighbors': [
+                            neighbor
                         ]
                     }
                     if len(self.new_devices) == 0:
                         self.new_devices.append(new_router)
-                    elif all(r_hostname != n_device['hostname'] for n_device in self.new_devices):
+                    elif all(hostname != n_device['hostname'] for n_device in self.new_devices):
                         self.new_devices.append(new_router)
                     else:
                         for new_device in self.new_devices:
-                            if new_device['hostname'] == r_hostname:
-                                new_device['links'].append(r_link)
+                            if new_device['hostname'] == hostname:
+                                new_device['links'].append(neighbor)
                                 break
 
-        for d in inv:
-            dev = d['device']
-            d_hostname = dev['hostname']
-            dev['connection_attempt'] = 'Success'
-            self.routers_switches.append(dev)
-            sw_check(d, d_hostname)
-            r_check(d, d_hostname)
+        for output in inv:
+            root_device = output['device']
+            routers_switches_list = output['output']['routers_switches']
+            root_device['connection_attempt'] = 'Success'
+            self.routers_switches.append(root_device)
+            check(routers_switches_list, root_device)
 
 
 class FullInventory:

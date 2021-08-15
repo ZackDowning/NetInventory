@@ -4,7 +4,7 @@ import re
 
 
 class CdpParser:
-    def __init__(self, cdp_neighbors, switchports, mac_addrs):
+    def __init__(self, cdp_neighbors, switchports, mac_addrs, session):
         nxos = False
         try:
             _ = cdp_neighbors[0]['destination_host']
@@ -17,9 +17,8 @@ class CdpParser:
             version_s = 'version'
             mgmt_ip_s = 'mgmt_ip'
         self.phones = []
-        self.switches = []
+        self.routers_switches = []
         self.waps = []
-        self.routers = []
         self.others = []
 
         def phone_parse(neighbor):
@@ -51,8 +50,12 @@ class CdpParser:
                 platform = neighbor['platform']
             phone = {
                 'hostname': hostname,
-                'local_intf': l_intf,
-                'mgmt_ip': mgmt_ip,
+                'neighbor': {
+                    'hostname': session.hostname,
+                    'ip_address': session.ip_address,
+                    'remote_intf': l_intf
+                },
+                'ip_address': mgmt_ip,
                 'mac_addr': mac_address,
                 'voice_vlan': voice_vlan,
                 'software_version': software_version,
@@ -60,7 +63,7 @@ class CdpParser:
             }
             self.phones.append(phone)
 
-        def switch_parse(neighbor):
+        def router_sw_parse(neighbor):
             mgmt_ip = neighbor[mgmt_ip_s]
             hostname = neighbor[hostname_s].split('.')[0]
             if hostname.__contains__('('):
@@ -89,48 +92,17 @@ class CdpParser:
                 platform = neighbor['platform']
             switch = {
                 'hostname': hostname,
-                'mgmt_ip': mgmt_ip,
-                'local_intf': neighbor['local_port'],
-                'remote_intf': neighbor['remote_port'],
+                'ip_address': mgmt_ip,
+                'neighbor': {
+                    'hostname': session.hostname,
+                    'ip_address': session.ip_address,
+                    'remote_intf': neighbor['local_port'],
+                    'local_intf': neighbor['remote_port']
+                },
                 'software_version': software_version,
                 'model': platform
             }
-            self.switches.append(switch)
-
-        def router_parse(neighbor):
-            mgmt_ip = neighbor[mgmt_ip_s]
-            hostname = neighbor[hostname_s].split('.')[0]
-            if nxos:
-                sysname = neighbor['sysname']
-                if sysname != '':
-                    hostname = sysname
-                if mgmt_ip == '':
-                    mgmt_ip = neighbor['interface_ip']
-            software_version = neighbor[version_s]
-            platform = neighbor['platform']
-            for software in software_version.split(','):
-                if software.__contains__('Version'):
-                    software_version = software.split('Version')[1]
-                    if software_version.__contains__(':'):
-                        software_version = software_version.replace(': ', '')
-                    else:
-                        software_version = software_version.replace(' ', '')
-                    break
-            if platform.__contains__('cisco '):
-                platform = neighbor['platform'].replace('cisco ', '')
-            elif platform.__contains__('Cisco '):
-                platform = neighbor['platform'].replace('Cisco ', '')
-            else:
-                platform = neighbor['platform']
-            router = {
-                'hostname': hostname,
-                'mgmt_ip': mgmt_ip,
-                'local_intf': neighbor['local_port'],
-                'remote_intf': neighbor['remote_port'],
-                'software_version': software_version,
-                'model': platform
-            }
-            self.routers.append(router)
+            self.routers_switches.append(switch)
 
         def wap_parse(neighbor):
             mgmt_ip = neighbor[mgmt_ip_s]
@@ -159,10 +131,14 @@ class CdpParser:
                 platform = neighbor['platform']
             ap = {
                 'hostname': hostname,
-                'mgmt_ip': mgmt_ip,
+                'ip_address': mgmt_ip,
                 'model': platform,
-                'r_intf': neighbor['remote_port'],
-                'l_intf': neighbor['local_port'],
+                'neighbor': {
+                    'hostname': session.hostname,
+                    'ip_address': session.ip_address,
+                    'remote_intf': neighbor['local_port'],
+                    'local_intf': neighbor['remote_port']
+                },
                 'software_version': software_version
             }
             self.waps.append(ap)
@@ -213,9 +189,13 @@ class CdpParser:
                 platform = neighbor['platform']
             other = {
                 'hostname': hostname,
-                'mgmt_ip': mgmt_ip,
-                'local_intf': neighbor['local_port'],
-                'remote_intf': neighbor['remote_port'],
+                'ip_address': mgmt_ip,
+                'neighbor': {
+                    'hostname': session.hostname,
+                    'ip_address': session.ip_address,
+                    'remote_intf': neighbor['local_port'],
+                    'local_intf': neighbor['remote_port']
+                },
                 'software_version': software_version,
                 'model': platform
             }
@@ -225,12 +205,11 @@ class CdpParser:
             capabilities = n['capabilities']
             if n['platform'].__contains__('IP Phone') or capabilities.__contains__('Phone'):
                 phone_parse(n)
-            elif capabilities.__contains__('Switch'):
-                switch_parse(n)
+            elif capabilities.__contains__('Router') and capabilities.__contains__('Source-Route-Bridge') or \
+                    capabilities.__contains__('Switch'):
+                router_sw_parse(n)
             elif capabilities.__contains__('Trans-Bridge'):
                 wap_parse(n)
-            elif capabilities.__contains__('Router') and capabilities.__contains__('Source-Route-Bridge'):
-                router_parse(n)
             else:
                 other_parse(n)
 
