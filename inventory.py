@@ -29,8 +29,8 @@ class Compile:
                 neighbor = {
                     'hostname': neighbor_device['hostname'],
                     'ip_address': neighbor_device['ip_address'],
-                    'remote_intf': rw_sw['local_intf'],
-                    'local_intf': rw_sw['remote_intf']
+                    'remote_intf': rw_sw['remote_intf'],
+                    'local_intf': rw_sw['local_intf']
                 }
                 if all(not hostname.__contains__(device['device']['hostname']) for device in inv) and \
                         all(not hostname.__contains__(known_hostname) for known_hostname in known_hostnames):

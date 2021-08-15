@@ -90,13 +90,15 @@ class CdpParser:
                 platform = neighbor['platform'].replace('Cisco ', '')
             else:
                 platform = neighbor['platform']
-            switch = {
+            router_sw = {
                 'hostname': hostname,
                 'ip_address': mgmt_ip,
+                'remote_intf': neighbor['local_port'],
+                'local_intf': neighbor['remote_port'],
                 'software_version': software_version,
                 'model': platform
             }
-            self.routers_switches.append(switch)
+            self.routers_switches.append(router_sw)
 
         def wap_parse(neighbor):
             mgmt_ip = neighbor[mgmt_ip_s]
