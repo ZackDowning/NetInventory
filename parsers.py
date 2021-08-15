@@ -4,6 +4,29 @@ import re
 
 
 class CdpParser:
+    """
+    Parses outputs of commands: 'show cdp neighbor', 'show interface switchport', and 'show mac address-table'.
+        Attributes:
+            phones = []\n
+            routers_switches = []\n
+            waps = []\n
+            others = []\n
+        Dictionary format within lists:
+            {
+                'hostname',\n
+                'ip_address',\n
+                'model',\n
+                'software_version',\n
+                'neighbor': { (on router_switch, intfs are not in 'neighbor')
+                    'hostname',\n
+                    'ip_address',\n
+                    'remote_intf', (neighbor interface)\n
+                    'local_intf', (local to device, not on wap or phone)\n
+                }\n
+                'mac_addr', (phone only)\n
+                'voice_vlan', (phone only)
+            }
+    """
     def __init__(self, cdp_neighbors, switchports, mac_addrs, session):
         nxos = False
         try:
@@ -22,6 +45,7 @@ class CdpParser:
         self.others = []
 
         def phone_parse(neighbor):
+            """Returns dictionary for CDP neighbor phone"""
             mgmt_ip = neighbor[mgmt_ip_s]
             hostname = neighbor[hostname_s].split('.')[0]
             if nxos:
@@ -64,6 +88,7 @@ class CdpParser:
             self.phones.append(phone)
 
         def router_sw_parse(neighbor):
+            """Returns dictionary for CDP neighbor router or switch"""
             mgmt_ip = neighbor[mgmt_ip_s]
             hostname = neighbor[hostname_s].split('.')[0]
             if hostname.__contains__('('):
@@ -101,6 +126,7 @@ class CdpParser:
             self.routers_switches.append(router_sw)
 
         def wap_parse(neighbor):
+            """Returns dictionary for CDP neighbor wireless access point"""
             mgmt_ip = neighbor[mgmt_ip_s]
             hostname = neighbor[hostname_s].split('.')[0]
             if nxos:
@@ -132,14 +158,14 @@ class CdpParser:
                 'neighbor': {
                     'hostname': session.hostname,
                     'ip_address': session.ip_address,
-                    'remote_intf': neighbor['local_port'],
-                    'local_intf': neighbor['remote_port']
+                    'remote_intf': neighbor['local_port']
                 },
                 'software_version': software_version
             }
             self.waps.append(ap)
 
         def other_parse(neighbor):
+            """Returns dictionary for CDP neighbor that isn't a phone, access point, router, or switch"""
             mgmt_ip = neighbor[mgmt_ip_s]
             hostname = neighbor[hostname_s].split('.')[0]
             if nxos:
@@ -198,6 +224,7 @@ class CdpParser:
             self.others.append(other)
 
         def parse(n):
+            """Given TEXTFSM CDP neighbor, checks type of device and runs through corresponding parser function."""
             capabilities = n['capabilities']
             if n['platform'].__contains__('IP Phone') or capabilities.__contains__('Phone'):
                 phone_parse(n)
