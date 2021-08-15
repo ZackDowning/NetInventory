@@ -81,11 +81,12 @@ class FullInventory:
                 if init:
                     print(f'=========================================================================\n'
                           f'Starting Initial Discovery on {len(mgmt_ips)} Devices...\n'
-                          f'=========================================================================\n')
+                          f'=========================================================================')
                 else:
                     print(f'-------------------------------------------------------------------------\n'
                           f'Starting Discovery Pass #{discovery_count} on {len(mgmt_ips)} Devices...\n'
                           f'-------------------------------------------------------------------------')
+
             while True:
                 sessions = AsyncSessions(username, password, mgmt_ips, discovery, enable_pw, True)
                 bug_check = BugCheck(sessions.successful_devices, sessions.failed_devices, mgmt_ips)
@@ -106,6 +107,8 @@ class FullInventory:
 
             sessions_outputs = sessions.outputs
             for output in sessions_outputs:
+                if init:
+                    known_hostnames.append(output['device']['hostname'])
                 output = output['output']
                 for wap in output['waps']:
                     self.waps.append(wap)
@@ -114,7 +117,6 @@ class FullInventory:
                 for other in output['others']:
                     self.others.append(other)
 
-            new_mgmt_ips = []
             compiled = Compile(sessions_outputs, known_hostnames)
             for router_switch in compiled.routers_switches:
                 if init:
@@ -128,7 +130,7 @@ class FullInventory:
                     if router_switch['ip_address'] == new_router_switch['ip_address']:
                         new_routers_switches.remove(new_router_switch)
                         break
-            new_devices = compiled.new_devices
+
             finish_discovery_time = time.perf_counter()
             if verbose:
                 discovery_elapsed_time = int(round((finish_discovery_time - start_discovery_time) / 60, 0))
@@ -136,12 +138,15 @@ class FullInventory:
                     if recursive:
                         print(f'-------------------------------------------------------------------------\n'
                               f'Finished Initial Discovery in {discovery_elapsed_time} Minutes\n'
-                              f'-------------------------------------------------------------------------')
+                              f'-------------------------------------------------------------------------\n')
                 else:
                     print(f'-------------------------------------------------------------------------\n'
                           f'Finished Discovery Pass #{discovery_count} in {discovery_elapsed_time} Minutes\n'
-                          f'-------------------------------------------------------------------------')
+                          f'-------------------------------------------------------------------------\n')
+
+            new_devices = compiled.new_devices
             if len(new_devices) != 0:
+                new_mgmt_ips = []
                 for new_router_switch in new_devices:
                     known_hostnames.append(new_router_switch['hostname'])
                     ip_address = new_router_switch['ip_address']
@@ -163,6 +168,6 @@ class FullInventory:
         finish_full_discovery_time = time.perf_counter()
         full_discovery_elapsed_time = int(round((finish_full_discovery_time - start_full_discovery_time) / 60, 0))
         if verbose:
-            print(f'\n=========================================================================\n'
+            print(f'=========================================================================\n'
                   f'Finished Full Discovery in {full_discovery_elapsed_time} Minutes\n'
-                  f'=========================================================================')
+                  f'=========================================================================\n')
