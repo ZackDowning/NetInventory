@@ -5,3 +5,4 @@
 /dist
 /dist/*
 *.spec
+test_dictionary.py

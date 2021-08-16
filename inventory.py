@@ -327,3 +327,16 @@ class InventoryDiscovery:
             print(f'=========================================================================\n'
                   f'Finished Full Discovery in {full_discovery_elapsed_time} Minutes\n'
                   f'=========================================================================\n')
+
+
+def merge_phone_discovery_cucm_export(discovered_phones, cucm_parsed_phones):
+    """Appends phone info from CUCM export to list of discovered phones
+
+    :parameter discovered_phones: 'InventoryDiscovery().phones'
+    :parameter cucm_parsed_phones: Output of 'cucm_export_parse()'
+    :return: List of discovered phones with 'description' and 'directory_number' added"""
+    for phone in discovered_phones:
+        phone_hostname = phone['hostname']
+        if phone_hostname in cucm_parsed_phones:
+            phone['description'] = cucm_parsed_phones[phone_hostname]['description']
+            phone['directory_number'] = cucm_parsed_phones[phone_hostname]['directory_number']

@@ -240,14 +240,15 @@ class CdpParser:
 
 
 def cucm_export_parse(file):
+    """Parses CUCM export of phones with fields 'Description', 'Device Name', and 'Directory Number 1'
+
+    :returns:  {'SEP000000000000': {'description', 'directory_number'}}"""
     phones = {}
     while True:
         try:
             with open(file) as phonelist_csv:
                 for line in phonelist_csv:
-                    if line.__contains__('Description,Device Name,Directory Number 1'):
-                        pass
-                    else:
+                    if not line.__contains__('Description,Device Name,Directory Number 1'):
                         info = line.split(',')
                         device_name = info[1]
                         description = info[0]
@@ -256,7 +257,6 @@ def cucm_export_parse(file):
                             'description': description,
                             'directory_number': directory_number
                         }
-            break
+            return phones
         except FileNotFoundError:
             raise NoPhoneReportFound('No phone report file found at provided location.')
-    return phones
