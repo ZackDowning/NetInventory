@@ -372,11 +372,14 @@ def output_to_spreadsheet(routers_switches, phones, aps, others, failed_devices,
         column_letter = alphabet[letter]
         bottom_right_cell = f'{column_letter}{column_num}'
         rows = write_to_sheet(device_list, worksheet, device_type)
-        table = Table(displayName=device_type, ref=f'A1:{bottom_right_cell}')
-        style = TableStyleInfo(name='TableStyleMedium9', showFirstColumn=False, showLastColumn=False,
-                               showRowStripes=True, showColumnStripes=True)
-        table.tableStyleInfo = style
-        worksheet.add_table(table)
+
+        # Creates table if there is data in table
+        if len(device_list) != 0:
+            table = Table(displayName=device_type, ref=f'A1:{bottom_right_cell}')
+            style = TableStyleInfo(name='TableStyleMedium9', showFirstColumn=False, showLastColumn=False,
+                                   showRowStripes=True, showColumnStripes=True)
+            table.tableStyleInfo = style
+            worksheet.add_table(table)
 
         # Sets column widths
         all_data = [header]
