@@ -1,14 +1,16 @@
 from gui import InventoryGui, inventory_save_folder_browse
 from inventory import InventoryDiscovery, merge_phone_discovery_cucm_export
 from parsers import output_to_spreadsheet
+# PyInstaller bundle command:
+# pyinstaller -F --hidden-import PySimpleGUI,net_async --add-data templates;templates main.py
 
 
 def main():
     user_info = InventoryGui()
-    if hasattr('user_info', 'password') or hasattr('user_info', 'enable_pw'):
+    if hasattr(user_info, 'mgmt_ips'):
         inventory = InventoryDiscovery(
             user_info.username, user_info.password, user_info.mgmt_ips, user_info.enable_pw, True)
-        if hasattr('user_info', 'parsed_cucm_phones'):
+        if hasattr(user_info, 'parsed_cucm_phones'):
             merge_phone_discovery_cucm_export(inventory.phones, user_info.parsed_cucm_phones)
         file_location = inventory_save_folder_browse()
         output_to_spreadsheet(
