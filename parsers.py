@@ -260,3 +260,10 @@ def cucm_export_parse(file):
             return phones
         except FileNotFoundError:
             raise NoPhoneReportFound('No phone report file found at provided location.')
+
+
+def output_to_file(file_location, inventory=None):
+    with open(f'{file_location}/network_inventory.csv', 'w+') as file:
+        file.write(
+            'ap_hostname,ap_mgmt_ip,ap_platform,ap_software,ap_intf,sw_intf,sw_hostname,sw_mgmt_ip\n'
+        )

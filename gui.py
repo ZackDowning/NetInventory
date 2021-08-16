@@ -2,6 +2,7 @@ import PySimpleGUI as Sg
 from net_async import MgmtIPAddresses
 from parsers import cucm_export_parse
 from exceptions import NoPhoneReportFound
+from os import path
 
 f = {
     'font': 'Helvetica',
@@ -42,6 +43,12 @@ def file_browse_botton(string, font=m_font):
         Sg.FileBrowse(str(string), initial_folder='./', font=font)]
 
 
+def folder_browse_botton(string, font=m_font):
+    return [
+        Sg.Input(Sg.user_settings_get_entry('-folder-', ''), key='folder'),
+        Sg.FolderBrowse(str(string), initial_folder='./', font=font)]
+
+
 def cucm_file_browse_botton(string, font=m_font):
     return [
         Sg.Input(Sg.user_settings_get_entry('-cucm_file-', ''), key='cucm_file'),
@@ -73,8 +80,20 @@ def w_mgmt_file_main(current_window=None):
     return Sg.Window(window_title, layout, margins=(100, 100))
 
 
+def w_save_folder(current_window=None):
+    """Folder Save Window"""
+    if current_window is not None:
+        current_window.close()
+    layout = [
+        gui_print('Select folder to save inventory spreadsheet to'),
+        folder_browse_botton('Browse'),
+        button('Save File')
+    ]
+    return Sg.Window(window_title, layout, margins=(100, 100))
+
+
 def w_credential(current_window=None):
-    """Main / Home Window"""
+    """Get Network Credential Window"""
     if current_window is not None:
         current_window.close()
     layout = [
@@ -101,13 +120,20 @@ def w_cucm_file_main(current_window=None):
     return Sg.Window(window_title, layout, margins=(100, 100))
 
 
-def w_file_not_found(current_window, cucm=False):
+def w_file_not_found(current_window, cucm=False, folder=False):
     """File Not Found Window and Retry"""
     current_window.close()
     if cucm:
         layout = [
             gui_print('File or directory not found.'),
             gui_print('Select file containing CUCM phone export'),
+            cucm_file_browse_botton('Browse'),
+            button('Retry')
+        ]
+    elif folder:
+        layout = [
+            gui_print('Directory not found.'),
+            gui_print('Select folder to save Inventory export'),
             cucm_file_browse_botton('Browse'),
             button('Retry')
         ]
@@ -162,8 +188,25 @@ def management_file_browse():
                     current_window = w_invalid_file_entry(current_window, file)
             except FileNotFoundError:
                 current_window = w_file_not_found(current_window)
-        if event == 'Main Page':
-            current_window = w_mgmt_file_main(current_window)
+        if event == Sg.WIN_CLOSED:
+            current_window.close()
+            return None
+
+
+def inventory_save_folder_browse():
+    """Window for selecting inventory save location
+
+    :return: Inventory file save folder location"""
+    current_window = w_save_folder()
+
+    while True:
+        event, values = current_window.read(timeout=10)
+        if event == 'Save File' or event == 'Retry':
+            Sg.user_settings_set_entry('-folder-', values['folder'])
+            if path.isdir(values['folder']):
+                return values['folder']
+            else:
+                current_window = w_file_not_found(current_window, folder=True)
         if event == Sg.WIN_CLOSED:
             current_window.close()
             return None
