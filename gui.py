@@ -85,7 +85,7 @@ def w_save_folder(current_window=None):
     if current_window is not None:
         current_window.close()
     layout = [
-        gui_print('Select folder to save inventory spreadsheet to'),
+        gui_print('Select folder to save Inventory Export'),
         folder_browse_botton('Browse'),
         button('Save File')
     ]
@@ -126,21 +126,21 @@ def w_file_not_found(current_window, cucm=False, folder=False):
     if cucm:
         layout = [
             gui_print('File or directory not found.'),
-            gui_print('Select file containing CUCM phone export'),
+            gui_print('Select CUCM export CSV file'),
             cucm_file_browse_botton('Browse'),
             button('Retry')
         ]
     elif folder:
         layout = [
             gui_print('Directory not found.'),
-            gui_print('Select folder to save Inventory export'),
-            cucm_file_browse_botton('Browse'),
+            gui_print('Select folder to save Inventory Export'),
+            folder_browse_botton('Browse'),
             button('Retry')
         ]
     else:
         layout = [
             gui_print('File or directory not found.'),
-            gui_print('Select file containing switch management IP addresses'),
+            gui_print('Select file containing device management IP addresses'),
             file_browse_botton('Browse'),
             button('Retry')
         ]
