@@ -1,5 +1,8 @@
 from exceptions import NoPhoneReportFound
 from net_async import multithread
+from openpyxl import Workbook
+from openpyxl.worksheet.table import Table, TableStyleInfo
+from datetime import datetime
 import re
 
 
@@ -27,6 +30,7 @@ class CdpParser:
                 'voice_vlan', (phone only)
             }
     """
+
     def __init__(self, cdp_neighbors, switchports, mac_addrs, session):
         nxos = False
         try:
@@ -262,8 +266,139 @@ def cucm_export_parse(file):
             raise NoPhoneReportFound('No phone report file found at provided location.')
 
 
-def output_to_file(file_location, inventory=None):
-    with open(f'{file_location}/network_inventory.csv', 'w+') as file:
-        file.write(
-            'ap_hostname,ap_mgmt_ip,ap_platform,ap_software,ap_intf,sw_intf,sw_hostname,sw_mgmt_ip\n'
-        )
+def output_to_spreadsheet(routers_switches, phones, aps, others, failed_devices, file_location):
+    """Parses device lists and outputs to spreadsheet"""
+    # Creates Excel workbook and worksheets
+    wb = Workbook()
+    routers_switches_ws = wb.active
+    routers_switches_ws.title = 'Routers_Switches'
+    phones_ws = wb.create_sheet('Phones')
+    aps_ws = wb.create_sheet('APs')
+    others_ws = wb.create_sheet('Others')
+    failed_ws = wb.create_sheet('Failed')
+
+    alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'
+
+    # Checks if phones contain directory number and description from CUCM export merge
+    if any('description' in phone for phone in phones):
+        phone_string = 'CUCMPhone'
+    else:
+        phone_string = 'Phone'
+
+    neighbor_count = 1
+    # Sets 'neighbor_count' to length of longest neighbor list in routers_switches dictionaries
+    for rt_sw in routers_switches:
+        if rt_sw['connection_attempt'] == 'Failed':
+            if len(rt_sw['neighbors']) > neighbor_count:
+                neighbor_count = len(rt_sw['neighbors'])
+
+    def write_header(worksheet, device_type):
+        """
+        :param device_type: 'RouterSwitch', 'Phone', 'CUCMPhone', 'WAP', 'Other', or 'Failed'
+        :param worksheet: Device worksheet
+        :return: int(header_length), list(header)
+        """
+        header = ['Hostname', 'IP Address', 'Model', 'Software Version']
+        if device_type == 'RouterSwitch':
+            header += ['Serial', 'Connection Type', 'ROMMON', 'Connection Attempt', 'Discovery Status']
+            for n in range(1, neighbor_count + 1):
+                header += [f'Neighbor {n} Hostname', f'Neighbor {n} IP Address', f'Local Interface to Neighbor {n}',
+                           f'Neighbor {n} Interface']
+        elif device_type == 'Phone' or device_type == 'CUCMPhone':
+            header += ['Voice VLAN', 'MAC Address', 'Switch Hostname', 'Switch IP Address', 'Switchport']
+            if device_type == 'CUCMPhone':
+                header += ['Description', 'Main Directory Number']
+        elif device_type == 'WAP':
+            header += ['Switch Hostname', 'Switch IP Address', 'Switchport']
+        elif device_type == 'Other':
+            header += ['Neighbor  Hostname', 'Neighbor IP Address', 'Local Interface to Neighbor', 'Neighbor Interface']
+        elif device_type == 'Failed':
+            header = ['IP Address', 'Connection Type', 'Device Type', 'Connectivity', 'Authentication',
+                      'Authorization', 'Discovery Status', 'Connection Exception']
+        worksheet.append(header)
+        return len(header), header
+
+    def write_to_sheet(device_list, worksheet, device_type):
+        """
+        :param device_type: 'RouterSwitch', 'Phone', 'CUCMPhone', 'WAP', 'Other', or 'Failed'
+        :param device_list: List of devices
+        :param worksheet: Device worksheet
+        :return: list(rows)
+        """
+        rows = []
+        for device in device_list:
+            if device_type != 'Failed':
+                row = [device['hostname'], device['ip_address'], device['model'], device['software_version']]
+                if device_type == 'RouterSwitch':
+                    if 'serial' in device:
+                        serial = device['serial']
+                        connection_type = device['connection_type']
+                        rommon = device['rommon']
+                    else:
+                        serial = 'Unknown'
+                        connection_type = 'Unknown'
+                        rommon = 'Unknown'
+                    row += [serial, connection_type, rommon, device['connection_attempt'], device['discovery_status']]
+                    if device['connection_attempt'] == 'Failed':
+                        for neighbor in device['neighbors']:
+                            row += [neighbor['hostname'], neighbor['ip_address'], neighbor['local_intf'],
+                                    neighbor['remote_intf']]
+                if device_type == 'Phone' or device_type == 'CUCMPhone':
+                    neighbor = device['neighbor']
+                    row += [device['voice_vlan'], device['mac_addr'], neighbor['hostname'], neighbor['ip_address'],
+                            neighbor['remote_intf']]
+                    if 'description' in device:
+                        row += [device['description'], device['directory_number']]
+                if device_type == 'WAP' or device_type == 'Other':
+                    neighbor = device['neighbor']
+                    row += [neighbor['hostname'], neighbor['ip_address'], neighbor['remote_intf']]
+                    if device_type == 'Other':
+                        row.append(neighbor['local_intf'])
+            else:
+                row = [device['ip_address'], device['connection_type'], device['device_type'], device['connectivity'],
+                       device['authentication'], device['authorization'], device['discovery_status'],
+                       device['exception']]
+            worksheet.append(row)
+            rows.append(row)
+        return rows
+
+    def complete_sheet(device_list, worksheet, device_type):
+        """Completes workbook sheet"""
+        column_num = len(device_list) + 1
+        header_out = write_header(worksheet, device_type)
+        header = header_out[1]
+        header_length = header_out[0]
+        letter = header_length - 1
+        column_letter = alphabet[letter]
+        bottom_right_cell = f'{column_letter}{column_num}'
+        rows = write_to_sheet(device_list, worksheet, device_type)
+        table = Table(displayName=device_type, ref=f'A1:{bottom_right_cell}')
+        style = TableStyleInfo(name='TableStyleMedium9', showFirstColumn=False, showLastColumn=False,
+                               showRowStripes=True, showColumnStripes=True)
+        table.tableStyleInfo = style
+        worksheet.add_table(table)
+
+        # Sets column widths
+        all_data = [header]
+        all_data += rows
+        column_widths = []
+        for row in all_data:
+            for i, cell in enumerate(row):
+                if len(column_widths) > i:
+                    if len(str(cell)) > column_widths[i]:
+                        column_widths[i] = len(str(cell))
+                else:
+                    column_widths += [len(str(cell))]
+
+        for i, column_width in enumerate(column_widths):
+            worksheet.column_dimensions[alphabet[i]].width = column_width + 3
+
+    complete_sheet(routers_switches, routers_switches_ws, 'RouterSwitch')
+    complete_sheet(phones, phones_ws, phone_string)
+    complete_sheet(aps, aps_ws, 'WAP')
+    complete_sheet(others, others_ws, 'Other')
+    complete_sheet(failed_devices, failed_ws, 'Failed')
+
+    # Saves workbook
+    date_time = datetime.now().strftime('%m_%d_%Y-%H_%M_%S')
+    wb.save(f'{file_location}/network_inventory-{date_time}-.xlsx')
