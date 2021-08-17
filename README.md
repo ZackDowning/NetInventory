@@ -33,16 +33,16 @@ directory number to discovered phones.
 ### If 'Use CUCM Export' Selected
 ![alt text](https://i.imgur.com/KWo5eKu.png)
 ### Management Credential Input
-![alt text](https://i.imgur.com/wP9HDF7.png)
+![alt text](https://i.imgur.com/APCyque.png)
 ### Discovery
-![alt text](https://i.imgur.com/4pNebwZ.png)
+![alt text](https://i.imgur.com/HHFt5Mx.png)
 
-![alt text](https://i.imgur.com/2Qt24yT.png)
+![alt text](https://i.imgur.com/nryOEqw.png)
 ### File Save Location Selection
 ![alt text](https://i.imgur.com/PnOiDDq.png)
 ## Output Report
-![alt text](https://i.imgur.com/g6UepTI.png)
-![alt text](https://i.imgur.com/vFmWWEI.png)
-![alt text](https://i.imgur.com/3xp1roC.png)
-![alt text](https://i.imgur.com/321FBGX.png)
-![alt text](https://i.imgur.com/euGOkle.png)
+![alt text](https://i.imgur.com/ZTw9JqC.png)
+![alt text](https://i.imgur.com/xTAG6mc.png)
+![alt text](https://i.imgur.com/Of0HpeI.png)
+![alt text](https://i.imgur.com/aTDvdFm.png)
+![alt text](https://i.imgur.com/YKdpkWF.png)
