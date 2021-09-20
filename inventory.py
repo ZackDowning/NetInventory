@@ -14,13 +14,16 @@ def discovery(session):
                 'routers_switches': cdp_parser.routers_switches,
                 'others': cdp_parser.others
             }"""
-    cdp_neighbors = session.send_command('show cdp neighbor detail')
-    switchports = session.send_command('show interface switchport')
-    mac_addrs = session.send_command('show mac address-table')
-    if cdp_neighbors.__contains__('Authorization failed') or switchports.__contains__('Authorization failed') or \
-            mac_addrs.__contains__('Authorization failed'):
+    try:
+        cdp_neighbors = session.send_command('show cdp neighbor detail')
+        switchports = session.send_command('show interface switchport')
+        mac_addrs = session.send_command('show mac address-table')
+        if cdp_neighbors.__contains__('Authorization failed') or switchports.__contains__('Authorization failed') or \
+                mac_addrs.__contains__('Authorization failed'):
+            raise ForceSessionRetry
+        cdp_parser = CdpParser(cdp_neighbors, switchports, mac_addrs, session)
+    except OSError:
         raise ForceSessionRetry
-    cdp_parser = CdpParser(cdp_neighbors, switchports, mac_addrs, session)
     return {
         'waps': cdp_parser.waps,
         'phones': cdp_parser.phones,
