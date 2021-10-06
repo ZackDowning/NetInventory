@@ -277,21 +277,7 @@ def output_to_spreadsheet(routers_switches, phones, aps, others, failed_devices,
     others_ws = wb.create_sheet('Others')
     failed_ws = wb.create_sheet('Failed')
 
-    alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ' \
-               'AAABACADAEAFAGAHAIAJAKALAMANAOAPAQARASATAUAVAWAXAYAZBABBBCBDBEBFBGBHBIBJBKBLBMBNBOBPBQBRBSBTBUBVBWBXB' \
-               'YBZCACBCCCDCECFCGCHCICJCKCLCMCNCOCPCQCRCSCTCUCVCWCXCYCZDADBDCDDDEDFDGDHDIDJDKDLDMDNDODPDQDRDSDTDUDVDW' \
-               'DXDYDZEAEBECEDEEEFEGEHEIEJEKELEMENEOEPEQERESETEUEVEWEXEYEZFAFBFCFDFEFFFGFHFIFJFKFLFMFNFOFPFQFRFSFTFUF' \
-               'VFWFXFYFZGAGBGCGDGEGFGGGHGIGJGKGLGMGNGOGPGQGRGSGTGUGVGWGXGYGZHAHBHCHDHEHFHGHHHIHJHKHLHMHNHOHPHQHRHSHT' \
-               'HUHVHWHXHYHZIAIBICIDIEIFIGIHIIIJIKILIMINIOIPIQIRISITIUIVIWIXIYIZJAJBJCJDJEJFJGJHJIJJJKJLJMJNJOJPJQJRJ' \
-               'SJTJUJVJWJXJYJZKAKBKCKDKEKFKGKHKIKJKKKLKMKNKOKPKQKRKSKTKUKVKWKXKYKZLALBLCLDLELFLGLHLILJLKLLLMLNLOLPLQ' \
-               'LRLSLTLULVLWLXLYLZMAMBMCMDMEMFMGMHMIMJMKMLMMMNMOMPMQMRMSMTMUMVMWMXMYMZNANBNCNDNENFNGNHNINJNKNLNMNNNON' \
-               'PNQNRNSNTNUNVNWNXNYNZOAOBOCODOEOFOGOHOIOJOKOLOMONOOOPOQOROSOTOUOVOWOXOYOZPAPBPCPDPEPFPGPHPIPJPKPLPMPN' \
-               'POPPPQPRPSPTPUPVPWPXPYPZQAQBQCQDQEQFQGQHQIQJQKQLQMQNQOQPQQQRQSQTQUQVQWQXQYQZRARBRCRDRERFRGRHRIRJRKRLR' \
-               'MRNRORPRQRRRSRTRURVRWRXRYRZSASBSCSDSESFSGSHSISJSKSLSMSNSOSPSQSRSSSTSUSVSWSXSYSZTATBTCTDTETFTGTHTITJTK' \
-               'TLTMTNTOTPTQTRTSTTTUTVTWTXTYTZUAUBUCUDUEUFUGUHUIUJUKULUMUNUOUPUQURUSUTUUUVUWUXUYUZVAVBVCVDVEVFVGVHVIV' \
-               'JVKVLVMVNVOVPVQVRVSVTVUVVVWVXVYVZWAWBWCWDWEWFWGWHWIWJWKWLWMWNWOWPWQWRWSWTWUWVWWWXWYWZXAXBXCXDXEXFXGXH' \
-               'XIXJXKXLXMXNXOXPXQXRXSXTXUXVXWXXXYXZYAYBYCYDYEYFYGYHYIYJYKYLYMYNYOYPYQYRYSYTYUYVYWYXYYYZZAZBZCZDZEZFZ' \
-               'GZHZIZJZKZLZMZNZOZPZQZRZSZTZUZVZWZXZYZZ'
+    alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'
 
     # Checks if phones contain directory number and description from CUCM export merge
     if any('description' in phone for phone in phones):
@@ -383,7 +369,10 @@ def output_to_spreadsheet(routers_switches, phones, aps, others, failed_devices,
         header = header_out[1]
         header_length = header_out[0]
         letter = header_length - 1
-        column_letter = alphabet[letter]
+        if letter > 25:
+            column_letter = f'{alphabet[int(letter / 26) - 1]}{alphabet[letter % 26]}'
+        else:
+            column_letter = alphabet[letter]
         bottom_right_cell = f'{column_letter}{column_num}'
         rows = write_to_sheet(device_list, worksheet, device_type)
 
@@ -408,7 +397,11 @@ def output_to_spreadsheet(routers_switches, phones, aps, others, failed_devices,
                     column_widths += [len(str(cell))]
 
         for i, column_width in enumerate(column_widths):
-            worksheet.column_dimensions[alphabet[i]].width = column_width + 3
+            if i > 25:
+                l1 = f'{alphabet[int(i / 26) - 1]}{alphabet[i % 26]}'
+            else:
+                l1 = alphabet[i]
+            worksheet.column_dimensions[l1].width = column_width + 3
 
     complete_sheet(routers_switches, routers_switches_ws, 'RouterSwitch')
     complete_sheet(phones, phones_ws, phone_string)
